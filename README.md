@@ -2,7 +2,7 @@
 A soundscape mixer for use in DnD and other settings.
 
 
-Get the latest version here: https://github.com/Kanium/AudioMixer/releases/tag/0.01
+Get the latest version here: https://github.com/Kanium/AudioMixer/releases/
 
 
 ## How to Use
