@@ -1,9 +1,9 @@
 # AudioMixer
 A soundscape mixer for use in DnD and other settings.
 
-
 Get the latest version here: https://github.com/Kanium/AudioMixer/releases/
 
+![A Sample Layout](https://i.gyazo.com/e616edd7fa1b4f7d24061a3b66bc479b.png)
 
 ## How to Use
 Place sounds inside the "sounds" folder. I suggest organizing them into folders inside the sounds folder.
