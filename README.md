@@ -10,7 +10,7 @@ Place sounds inside the "sounds" folder. I suggest organizing them into folders 
 
 If you press "s" a save of your current layout will be made. These save files are accessible in:
 
-C:/Users/<Your Username>/AppData/Roaming/AudioMixer
+C:/Users/Your Username/AppData/Roaming/AudioMixer
 
 You can also find this by using the start button search field to write exactly: %appdata%
 Then navigate ro Roaming, and then AudioMixer.
