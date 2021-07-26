@@ -4,12 +4,12 @@ local tserial = require 'tserial'
 function love.load()
 	-- Setup the window
 	love.window.setTitle( "AudioMixer" )
-	love.window.setMode( 750, 800, {resizable=true, vsync=false, minwidth=200, minheight=200} )
+	love.window.setMode( 1024, 900, {resizable=true, vsync=false, minwidth=200, minheight=200} )
 	--icon = love.image.newImageData("icon.png")
 	--love.window.setIcon(icon)
 	love.keyboard.setKeyRepeat(true)
-	screenHeight = 800
-	screenWidth = 750
+	screenHeight = 900
+	screenWidth = 1024
 	
 	-- Setting RootDirectory
 	rootDir = love.filesystem.getSourceBaseDirectory()
@@ -17,13 +17,14 @@ function love.load()
 
 	love.graphics.setBackgroundColor(0,0,0,0)	
 	
-	mode = "search"
+	mode = "directory"
 	folders = {}
 	tick = 0
 	selected = 0
 	choice = 0
-	searchSpacing = 20
+	searchSpacing = 16
 	currentDirectory = 1
+	lastDir = ""
 	
 	--Audio Panel Globals
 	layout = {}
@@ -46,10 +47,12 @@ function love.load()
 	if love.filesystem.isFused( ) then
 		fused = 1
 		loadFiles("Root/sounds")
+		currentDir = "Root/sounds"
 	else
 		fused = 0
 		--recursiveLoad("sounds")
 		loadFiles("sounds")
+		currentDir = "sounds"
 	end
 	
 end
@@ -113,29 +116,52 @@ function loadSounds(folderID)
 	end
 end
 
---old loading code
---[[function loadSounds(folderID)
-	local dir = "Root/sounds"
-	--assuming that our path is full of lovely files
-	local files = love.filesystem.getDirectoryItems(dir)
-	for k, file in ipairs(files) do
-		sounds[#sounds+1] = love.audio.newSource(dir .."/" ..file, "stream")
-		soundNames[#soundNames+1] = file
+function drawDirectory(dir)
+	local entriesPerColumn = math.floor(screenHeight/searchSpacing)-2
+	local directoryItems = love.filesystem.getDirectoryItems(dir)
+	if lastDir ~= "" then
+		love.graphics.setColor(0.8,0.8,0.8,1)
+		love.graphics.rectangle("line",5,10,50,20)
+		love.graphics.setColor(0.8,0.8,0.5,1)
+		love.graphics.print("<- Back",5,10)
+	end
+	for i, item in ipairs(directoryItems) do
+		local itemInfo = love.filesystem.getInfo(dir .."/" ..item)
+		if itemInfo.type == "directory" then
+			love.graphics.setColor(0.8,0.8,0,1)
+		else
+			love.graphics.setColor(1,1,1,1)
+		end
+		if i >= entriesPerColumn then
+			love.graphics.print(item,(screenWidth/2)+10,searchSpacing+((i-entriesPerColumn+1)*searchSpacing))
+		else
+			love.graphics.print(item,5,searchSpacing+(i*searchSpacing))
+		end
+	end
+	love.graphics.setColor(0.9,0.9,0,1)
+	local x,y = love.mouse.getPosition( )
+	local highlighted = 0
+	--left column
+	if x>5 and x<(screenWidth/2)-5 and y<screenHeight-searchSpacing and y > searchSpacing then
+		highlighted = math.floor(y/searchSpacing)-1
+		if highlighted > #directoryItems then
+			highlighted = 0
+		end
+	end
+	--right column
+	if x>(screenWidth/2)+5 and x<(screenWidth-5) and y<screenHeight-searchSpacing and y > searchSpacing then
+		highlighted = math.floor(y/searchSpacing)+entriesPerColumn-1
+		if highlighted > #directoryItems then
+			highlighted = 0
+		end
+	end
+	if highlighted >= entriesPerColumn+1 then
+		love.graphics.rectangle("line",(screenWidth/2)-5,((highlighted-entriesPerColumn+2)*searchSpacing)-searchSpacing,(screenWidth/2)-10,searchSpacing)
+	end
+	if highlighted > 0 and highlighted < entriesPerColumn then
+		love.graphics.rectangle("line",5,(highlighted*searchSpacing)+searchSpacing,(screenWidth/2)-10,searchSpacing)
 	end
 end
-
-function recursiveLoad(folder)
-	local files = love.filesystem.getDirectoryItems(folder)
-	for k, fold in ipairs(files) do
-		folders[#folders+1] = {path=folder .."/" ..fold,sounds={},soundNames={}}
-	end
-	for i = 1,#folders do
-		testSounds(i)
-	end
-end
-
-
---]]
 
 function randomTick()
 	if #layout > 0 then
@@ -187,14 +213,6 @@ function love.update(dt)
 		randomTick()
 		loopMusic()
 	end
-	if fused == 1 then
-		if success then
-			--Sounds
-			fused = 0
-		else 
-			fused = 2
-		end
-	end
 	
 	local down = love.mouse.isDown(1)
 	local x,y = love.mouse.getPosition()
@@ -226,46 +244,8 @@ function love.draw()
 	if test ~= nil then
 		love.graphics.print(test,0,screenHeight-25)
 	end
-	local entriesPerColumn = math.floor(screenHeight/searchSpacing)-1
-	if mode == "search" then
-		love.graphics.setColor(1,1,1,1)
-		if #folders > 0 then
-			for i = 1,(#folders[currentDirectory].sounds) do
-				if i < entriesPerColumn then
-					love.graphics.print(folders[currentDirectory].soundNames[i],5,(i*searchSpacing)-searchSpacing)
-				else
-					love.graphics.print(folders[currentDirectory].soundNames[i],(screenWidth/2)+5,((i-entriesPerColumn)*searchSpacing))
-				end
-			end
-			love.graphics.setColor(0.9,0.9,0,1)
-			local x,y = love.mouse.getPosition( )
-			local highlighted = 0
-			--left column
-			if x>5 and x<(screenWidth/2)-5 and y<screenHeight-searchSpacing then
-				highlighted = math.floor(y/searchSpacing)+1
-				if highlighted > #folders[currentDirectory].sounds then
-					highlighted = 0
-				end
-			end
-			--right column
-			if x>(screenWidth/2)+5 and x<(screenWidth-5) then
-				highlighted = math.floor(y/searchSpacing)+entriesPerColumn+1
-				if highlighted > #folders[currentDirectory].sounds+1 then
-					highlighted = 0
-				end
-			end
-			if highlighted > entriesPerColumn then
-				love.graphics.rectangle("line",(screenWidth/2)-5,((highlighted-entriesPerColumn)*searchSpacing)-searchSpacing,(screenWidth/2)-10,searchSpacing)
-			end
-			if highlighted > 0 and highlighted < entriesPerColumn then
-				love.graphics.rectangle("line",5,(highlighted*searchSpacing)-searchSpacing,(screenWidth/2)-10,searchSpacing)
-			end
-			--Folder Name
-			love.graphics.printf(folders[currentDirectory].path,0,screenHeight-searchSpacing,screenWidth,"center")
-			--Folder Buttons
-			love.graphics.polygon("line",(screenWidth/5)*1,screenHeight-15,((screenWidth/5)*1)+15,(screenHeight-15)-10,((screenWidth/5)*1)+15,(screenHeight-15)+10)
-			love.graphics.polygon("line",((screenWidth/5)*4)+15,screenHeight-15,(screenWidth/5)*4,(screenHeight-15)-10,(screenWidth/5)*4,(screenHeight-15)+10)
-		end
+	if mode == "directory" then
+		drawDirectory(currentDir)
 	end
 	if mode == "mixer" then
 		if #layout > 0 then
@@ -338,52 +318,43 @@ function drawPanel(pNum)
 end
 
 function love.mousepressed(x,y,button)
-	if mode == "search" then
-		--Folder Controls
-		if #folders > 1 then
-			if button == 1 then
-				if x > (screenWidth/5)*1 and x < ((screenWidth/5)*1)+15 and y > (screenHeight-15)-10 and y < (screenHeight-15)+10 then
-					if currentDirectory == 1 then
-						currentDirectory = #folders
-					else
-						currentDirectory = currentDirectory - 1
-					end
-				end
-				if x > (screenWidth/5)*4 and x < ((screenWidth/5)*4)+15 and y > (screenHeight-15)-10 and y < (screenHeight-15)+10 then
-					if currentDirectory == #folders then
-						currentDirectory = 1
-					else
-						currentDirectory = currentDirectory + 1
-					end
-				end
+	if mode == "directory" then
+		local entriesPerColumn = math.floor(screenHeight/searchSpacing)-1
+		local directoryItems = love.filesystem.getDirectoryItems(currentDir)
+		--left column
+		if x>5 and x<(screenWidth/2)-5 then
+			choice = math.floor(y/searchSpacing)-1
+			if choice > #directoryItems then
+				choice = 0
+			end
+			if choice > entriesPerColumn-2 then
+				choice = 0
 			end
 		end
+		--right column
+		if x>(screenWidth/2)+5 and x<(screenWidth-5) then
+			choice = math.floor(y/searchSpacing)-1+entriesPerColumn-2
+			if choice > (entriesPerColumn-2)*2 then
+				choice = 0
+			end
+			if choice < entriesPerColumn-2 then
+				choice = 0
+			end
+		end 
 		
-		if #folders > 0 then
-			local entriesPerColumn = math.floor(screenHeight/searchSpacing)-1
-			
-			--left column
-			if x>5 and x<(screenWidth/2)-5 then
-				choice = math.floor(y/searchSpacing)+1
-				if choice > #folders[currentDirectory].sounds then
-					choice = 0
-				end
-				if choice > entriesPerColumn-1 then
-					choice = 0
+		if choice > 0 and button == 1 then
+			for i = 1,#folders do
+				if folders[i].path == currentDir then
+					currentDirectory = i
 				end
 			end
-			--right column
-			if x>(screenWidth/2)+5 and x<(screenWidth-5) then
-				choice = math.floor(y/searchSpacing)+entriesPerColumn
-				if choice > #folders[currentDirectory].sounds then
-					choice = 0
-				end
-				if choice < entriesPerColumn then
-					choice = 0
-				end
-			end
-			
-			if choice > 0 and button == 1 then
+			local directoryItems = love.filesystem.getDirectoryItems(currentDir)
+			local itemInfo = love.filesystem.getInfo(currentDir .."/" ..directoryItems[choice])
+			if itemInfo.type == "directory" then
+				lastDir = currentDir
+				currentDir = currentDir .."/" ..directoryItems[choice]
+				
+			else
 				if #layout > 0 then
 					local matched = 0
 					for i = 1,#layout do
@@ -397,20 +368,32 @@ function love.mousepressed(x,y,button)
 				else
 					layout[#layout+1] = {name=folders[currentDirectory].soundNames[choice],folderID=currentDirectory,soundID=choice,posX=0,posY=0,vol=0,angle=-3,mute=0,pitchToggle=0,randomToggle=0,randomMin=1,randomMax=3,randomMinSelected=0,randomMaxSelected=0,randomSeconds=0,playing=0,heavy=0}
 				end
-				love.audio.stop()
 				mode = "mixer"
-				choice = 0
-			end
-			
-			if choice > 0 and button == 2 then
-				if folders[currentDirectory].sounds[choice]:isPlaying() then
-					love.audio.stop()
-				else
-					love.audio.play(folders[currentDirectory].sounds[choice])
-				end
 			end
 		end
 		
+		if choice > 0 and button == 2 then
+			for i = 1,#folders do
+				if folders[i].path == currentDir then
+					currentDirectory = i
+				end
+			end
+			if folders[currentDirectory].sounds[choice]:isPlaying() then
+				love.audio.stop()
+			else
+				love.audio.play(folders[currentDirectory].sounds[choice])
+			end
+		end
+		--Back Button
+		if lastDir ~= "" then
+			if x < 55 and y > 10 and y < 30 then
+				if fused == 1 then
+					currentDir = "Root/sounds"
+				else
+					currentDir = "sounds"
+				end
+			end
+		end
 	end
 	if mode == "mixer" then
 		if #layout > 0 then
@@ -521,7 +504,7 @@ end
 function love.keypressed(key)
 	if key == "escape" or key == "tab" then
 		if mode == "mixer" then
-			mode = "search"
+			mode = "directory"
 			if #layout > 0 then
 				for i = 1,#layout do
 					local soundfile = folders[layout[i].folderID].sounds[layout[i].soundID]
