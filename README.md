@@ -1,12 +1,16 @@
 # AudioMixer
 A soundscape mixer for use in DnD and other settings.
 
+Get the latest version here: https://github.com/Kanium/AudioMixer/releases/
+
+![A Sample Layout](https://i.gyazo.com/e616edd7fa1b4f7d24061a3b66bc479b.png)
+
 ## How to Use
 Place sounds inside the "sounds" folder. I suggest organizing them into folders inside the sounds folder.
 
 If you press "s" a save of your current layout will be made. These save files are accessible in:
 
-C:/Users/<Your Username>/AppData/Roaming/AudioMixer
+C:/Users/Your Username/AppData/Roaming/AudioMixer
 
 You can also find this by using the start button search field to write exactly: %appdata%
 Then navigate ro Roaming, and then AudioMixer.
